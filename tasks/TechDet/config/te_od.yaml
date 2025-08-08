@@ -1,0 +1,20 @@
+base_config:
+  - ./base.yaml
+  - ./te2.yaml
+
+processed_data_dir: /mnt/sdf/hongzhiqing/data/raw/singtech_outdomain
+binary_data_dir: data/binary/huawei-od
+apply_neg_sampling: false
+have_tech_gt: false
+
+pe: pw  # rmvpe|parselmouth|pw
+bkb_net: zipformer
+binarizer_cls: research.singtech.config.te_binarizer.OutDomainTechExtractionBinarizer
+binarization_args:
+  with_wav: true
+  with_mel: false
+  with_breathiness: true
+  with_energy: true
+  with_zcr: true
+
+task_cls: research.singtech.te_task2.TEODTask

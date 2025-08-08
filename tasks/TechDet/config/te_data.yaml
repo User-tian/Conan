@@ -1,0 +1,95 @@
+base_config:
+  - ./base.yaml
+  - ./te.yaml
+
+# 开始进行负采样的测试，且数据更新到 huawei-0310
+
+processed_data_dir: data/processed/hwzhen
+binary_data_dir: data/binary/hwzhen
+
+binarization_args:
+  with_wav: true
+  with_mel: false
+  with_breathiness: true
+  with_energy: true
+  with_zcr: true
+
+task_cls: research.singtech.te_task_hi_multi.TETask
+
+test_prefixes: [
+  "华为女声#假声#单身情歌",
+  "华为女声#力度#单身情歌",
+  "华为女声#气泡音#单身情歌",
+  "华为女声#气声#单身情歌",
+  "华为女声#假声#岁月神偷",
+  "华为女声#力度#岁月神偷",
+  "华为女声#气泡音#岁月神偷",
+  "华为女声#气声#岁月神偷",
+  "华为男声#假声#不能说的秘密",
+  "华为男声#力度#爱情转移",
+  "华为男声#气泡音#安河桥",
+  "华为男声#气声#暗香",
+  "华为男声#假声#魔鬼中的天使",
+  "华为男声#力度#魔鬼中的天使",
+  "华为男声#气泡音#魔鬼中的天使",
+  "Chinese#ZH-Alto-1#Breathy#不再见",
+  "Chinese#ZH-Tenor-1#Breathy#不染",
+  "Chinese#ZH-Tenor-1#Pharyngeal#不为谁而作的歌",
+  "Chinese#ZH-Alto-1#Pharyngeal#不为谁而作的歌",
+  "Chinese#ZH-Alto-1#Vibrato#不再见",
+  "Chinese#ZH-Tenor-1#Vibrato#从前慢",
+  "Chinese#ZH-Tenor-1#Glissando#不染",
+  "Chinese#ZH-Alto-1#Glissando#传奇",
+  "Chinese#ZH-Alto-1#Mixed_Voice_and_Falsetto#一次就好",
+  "Chinese#ZH-Tenor-1#Mixed_Voice_and_Falsetto#一次就好",
+
+  "English#EN-Alto-1#Breathy#all is found",
+  "English#EN-Alto-1#Pharyngeal#beauty and the beast",
+  "English#EN-Alto-2#Vibrato#A Thousand Years",
+  "English#EN-Alto-2#Glissando#A Thousand Years",
+  "English#EN-Alto-2#Mixed_Voice_and_Falsetto#A Thousand Years",
+  "English#EN-Alto-2#Mixed_Voice_and_Falsetto#All of Me",
+
+  # "Spanish#ES-Bass-1#Mixed_Voice_and_Falsetto#Aire",
+  # "German#DE-Tenor-1#Mixed_Voice_and_Falsetto#An die Laute",
+  # "French#FR-Tenor-1#Mixed_Voice_and_Falsetto#Le Toréador",
+  # "Russian#RU-Alto-1#Mixed_Voice_and_Falsetto#Аня Облонская",
+  # "Japanese#JA-Tenor-1#Mixed_Voice_and_Falsetto#Heartful song",
+  # "Korean#KO-Soprano-1#Mixed_Voice_and_Falsetto#all with you",
+  # "Italian#IT-Bass-1#Mixed_Voice_and_Falsetto#Gioia dell'amore"
+]
+
+
+updown_rates: 2-2-2
+channel_multiples: 1-1-1
+
+apply_neg_sampling: true
+apply_tech_group_loss: true
+apply_weighted_sampler: false
+
+lambda_tech: 1.0
+lambdas_tech: ''
+lambda_tech_focal: 3.0
+
+use_breathiness: true
+breathiness_add_noise: gaussian:0.04
+use_energy: true
+energy_add_noise: gaussian:0.04
+use_zcr: true
+zcr_add_noise: gaussian:0.01
+frames_multiple: 8
+
+lr: 0.000005
+max_sentences: 20
+max_tokens: 30000
+max_updates: 100000
+max_frames: 6000
+# hierarchical_classification: true
+# lambda_group_tech: 1.0
+# group_tech_attn_num_head: 4
+# group_tech_num: 6
+# group_tech_temperature: 0.01
+val_check_interval: 2000
+num_valid_stats: 1000
+
+

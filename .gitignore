@@ -1,0 +1,88 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+.conda/
+conda_env/
+
+# Packaging / build artifacts
+build/
+dist/
+site/
+*.egg-info/
+.eggs/
+*.egg
+pip-wheel-metadata/
+
+# Test / type / tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.dmypy.json
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+
+# IDE / editor
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs / experiment tracking
+logs/
+tensorboard/
+wandb/
+lightning_logs/
+
+# Project data & generated artifacts (keep placeholders)
+data/
+!data/README.md
+!data/.gitkeep
+
+# Training checkpoints, code snapshots, TB logs (keep placeholder)
+checkpoints/
+!checkpoints/README.md
+!checkpoints/.gitkeep
+
+# Inference outputs / demos
+infer_out/
+infer_out_demo/
+
+# Trials outputs (common large artifacts)
+trials/*.pt
+trials/*.ckpt
+trials/*.wav
+
+# Model weights and large arrays (global)
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.npy
+*.npz
+
+# Audio/media dumps
+*.wav
+*.flac
+*.mp3
+*.m4a
+
+# Emformer debug dumps
+emformer_codes_*.txt
+emformer_codes_*_concatenated.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+trials/
