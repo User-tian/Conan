@@ -53,7 +53,6 @@ def librosa_wav2spec(wav_path,
             wav, _ = librosa.core.load(wav_path, sr=sample_rate)
     else:
         wav = wav_path
-    
     wav_orig = np.copy(wav)
     
     if loud_norm:

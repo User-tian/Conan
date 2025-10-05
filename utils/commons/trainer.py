@@ -538,7 +538,7 @@ class Trainer:
     def save_terminal_logs(self):
         t = datetime.now().strftime('%Y%m%d%H%M%S')
         os.makedirs(f'{self.work_dir}/terminal_logs', exist_ok=True)
-        Tee(f'{self.work_dir}/terminal_logs/log_{t}.txt', 'w')
+        # Tee(f'{self.work_dir}/terminal_logs/log_{t}.txt', 'w')
 
     def save_codes(self):
         if len(hparams['save_codes']) > 0:

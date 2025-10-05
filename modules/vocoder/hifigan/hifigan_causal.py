@@ -1,5 +1,5 @@
-# 文件名: verify_causal_upsample_block.py
-# 目的: 验证 HiFiGAN Generator 及其组件的因果性 (使用 CausalUpsampleBlock)
+# Filename: verify_causal_upsample_block.py
+# Purpose: Verify causality of HiFiGAN Generator and its components (using CausalUpsampleBlock)
 
 import math
 import torch
@@ -9,10 +9,10 @@ import torch.nn.functional as F
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 import numpy as np
 import copy
-import traceback # 用于打印详细错误
+import traceback # Used for printing detailed errors
 from modules.vocoder.hifigan.mel_utils import cal_mel_spec
 
-# 确定性设置
+# Deterministic settings
 # torch.backends.cudnn.benchmark = False
 # torch.backends.cudnn.deterministic = True
 # torch.use_deterministic_algorithms(True)
@@ -149,7 +149,7 @@ class CausalUpsampleBlock1(nn.Module):
 # -----------------------------
 
 class CausalUpsampleBlock2(nn.Module):
-    """使用 手动插零 + 因果卷积 实现因果上采样"""
+    """Use manual zero-insertion + causal convolution to implement causal upsampling"""
     def __init__(self, in_channels, out_channels, stride, conv_kernel_size=5):
         super().__init__()
         self.stride = stride
@@ -160,7 +160,7 @@ class CausalUpsampleBlock2(nn.Module):
         x_upsampled = torch.zeros(B, C, T_out, device=x.device, dtype=x.dtype)
         x_upsampled[:, :, ::self.stride] = x
         output = self.conv(x_upsampled)
-        if output.shape[2] != T_out: print(f"警告: CausalUpsampleBlock T={output.shape[2]} != Expected T={T_out}!")
+        if output.shape[2] != T_out: print(f"Warning: CausalUpsampleBlock T={output.shape[2]} != Expected T={T_out}!")
         return output
     def remove_weight_norm(self): self.conv.remove_weight_norm()
 
@@ -184,8 +184,8 @@ class CausalPixelShuffle1d(nn.Module):
         r = self.upscale_factor
 
         x = x.view(B, C, r, T)  # (B, C, r, T)
-        x = x.permute(0, 1, 3, 2)  # (B, C, T, r) - 把 r 放到最后
-        x = x.reshape(B, C, T * r) # (B, C, T * r) - 展开 T*r 维度
+        x = x.permute(0, 1, 3, 2)  # (B, C, T, r) - put r at the end
+        x = x.reshape(B, C, T * r) # (B, C, T * r) - expand T*r dimension
         return x
 
 class CausalUpsampleBlock3(nn.Module):
@@ -197,7 +197,7 @@ class CausalUpsampleBlock3(nn.Module):
          self.stride = stride
          # Convolution produces stride * out_channels
          intermediate_channels = out_channels * stride
-         # 使用 CausalConv1d 保证卷积部分的因果性
+         # Use CausalConv1d to ensure causality of the convolution part
          self.conv = CausalConv1d(in_channels, intermediate_channels, kernel_size=conv_kernel_size)
          self.shuffle = CausalPixelShuffle1d(stride)
          # print(f"[CausalUpsampleSubPixel] k={conv_kernel_size}, s={stride}, in={in_channels}, mid={intermediate_channels}, out={out_channels}")
@@ -333,12 +333,12 @@ class HifiGanGenerator(nn.Module):
         return torch.tanh(x) # Output waveform
 
     def remove_weight_norm(self):
-        print("正在移除 Generator 中的 weight_norm...")
+        print("Removing weight_norm from Generator...")
         self.conv_pre.remove_weight_norm()
         for up_layer in self.ups: up_layer.remove_weight_norm()
         for res_block in self.resblocks: res_block.remove_weight_norm()
         self.conv_post.remove_weight_norm()
-        print("Generator weight_norm 移除完成.")
+        print("Generator weight_norm removal completed.")
 
 
 def get_padding(kernel_size, dilation=1):
@@ -455,7 +455,7 @@ class DiscriminatorS(torch.nn.Module):
 class MultiScaleDiscriminator(torch.nn.Module):
     def __init__(self, use_cond=False, c_in=1):
         super(MultiScaleDiscriminator, self).__init__()
-        from utils.hparams import hparams
+        from utils.commons.hparams import hparams
         self.discriminators = nn.ModuleList([
             DiscriminatorS(use_spectral_norm=True, use_cond=use_cond,
                            upsample_rates=[4, 4, hparams['hop_size'] // 16],
@@ -545,7 +545,7 @@ def mel_loss(y,y_,hparams):
     return loss
 
 # -----------------------------
-# Causality Verification Function (修正版)
+# Causality Verification Function (Revised Version)
 # -----------------------------
 def verify_causality(module: nn.Module, input_shape: tuple, module_name: str = "Module",
                      perturb_magnitude: float = 1e-3, tolerance: float = 1e-6, device: str = 'cpu',
@@ -553,9 +553,9 @@ def verify_causality(module: nn.Module, input_shape: tuple, module_name: str = "
     module.eval(); module.to(device)
     is_causal = True
     B, C, T = input_shape
-    if T <= 1: print(f"[{module_name}] 输入时间步过短 ({T})，跳过。"); return True
+    if T <= 1: print(f"[{module_name}] Input time steps too short ({T}), skipping."); return True
 
-    print(f"--- 正在验证 {module_name} 的因果性 ---")
+    print(f"--- Verifying causality of {module_name} ---")
     x = torch.randn(B, C, T, device=device)
     with torch.no_grad():
         try:
@@ -563,7 +563,7 @@ def verify_causality(module: nn.Module, input_shape: tuple, module_name: str = "
              output_orig = module(x)
              print(f"[{module_name}] Initial forward pass successful. Output shape: {output_orig.shape}")
         except Exception as e:
-             print(f"[{module_name}] 初始前向传播出错: {e}"); traceback.print_exc(); return False
+             print(f"[{module_name}] Initial forward propagation error: {e}"); traceback.print_exc(); return False
         output_len = output_orig.shape[2]
 
         for t in range(T - 1):
@@ -573,10 +573,10 @@ def verify_causality(module: nn.Module, input_shape: tuple, module_name: str = "
             try:
                 output_pert = module(x_pert)
             except Exception as e:
-                print(f"[{module_name}] 在 t={t} 进行扰动前向传播时出错: {e}"); traceback.print_exc(); is_causal = False; break
+                print(f"[{module_name}] Error during perturbed forward propagation at t={t}: {e}"); traceback.print_exc(); is_causal = False; break
 
             check_len_out = 0
-            # --- 修正: 检查 CausalUpsampleBlock ---
+            # --- Fix: Check CausalUpsampleBlock ---
             if isinstance(module, (CausalUpsampleBlock1, CausalUpsampleBlock2,CausalUpsampleBlock3)):
                  check_len_out = (t + 1) * stride
             # -------------------------------------
@@ -590,30 +590,30 @@ def verify_causality(module: nn.Module, input_shape: tuple, module_name: str = "
             slice_pert = output_pert[:, :, :check_len_out]
             if not torch.allclose(slice_orig, slice_pert, atol=tolerance):
                 is_causal = False; diff = torch.abs(slice_orig - slice_pert).max()
-                print(f"[{module_name}] 在输入时间 t={t} 处因果性检查失败")
-                print(f"  输出在计算出的输出索引 {check_len_out-1} 之前就已不同。")
-                print(f"  最大绝对差值: {diff.item()}"); break
+                print(f"[{module_name}] Causality check failed at input time t={t}")
+                print(f"  Output differs before calculated output index {check_len_out-1}.")
+                print(f"  Maximum absolute difference: {diff.item()}"); break
 
-    if is_causal: print(f"[{module_name}] 通过因果性检查。")
-    print(f"--- {module_name} 验证结束 ---")
+    if is_causal: print(f"[{module_name}] Passed causality check.")
+    print(f"--- {module_name} verification ended ---")
     return is_causal
 
-# 在脚本中添加这个新函数 (可以放在 verify_causality 后面)
+# Add this new function in the script (can be placed after verify_causality)
 
 def verify_prefix_consistency(generator: nn.Module, hparams: dict, device: str,
-                              t1_frames: int = 8,    # 短输入的帧数 (对应 80ms)
-                              t2_frames: int = 16,   # 长输入的帧数 (对应 160ms)
+                              t1_frames: int = 8,    # Short input frames (corresponding to 80ms)
+                              t2_frames: int = 16,   # Long input frames (corresponding to 160ms)
                               batch_size: int = 1,
                               tolerance: float = 1e-6):
     """
-    验证生成器对于不同长度但具有相同前缀的输入，其输出前缀是否一致。
+    Verify whether the generator's output prefix is consistent for inputs of different lengths but with the same prefix.
     """
     module_name = "Generator Prefix Consistency"
-    print(f"--- 正在验证 {module_name} ---")
-    print(f"    短输入帧数 T1 = {t1_frames}, 长输入帧数 T2 = {t2_frames}")
+    print(f"--- Verifying {module_name} ---")
+    print(f"    Short input frames T1 = {t1_frames}, Long input frames T2 = {t2_frames}")
 
     if t2_frames <= t1_frames:
-        print(f"错误: t2_frames ({t2_frames}) 必须大于 t1_frames ({t1_frames})")
+        print(f"Error: t2_frames ({t2_frames}) must be greater than t1_frames ({t1_frames})")
         return False
 
     generator.eval()
@@ -622,82 +622,82 @@ def verify_prefix_consistency(generator: nn.Module, hparams: dict, device: str,
     num_mels = hparams.get('num_mels', 80)
     total_stride = np.prod(hparams.get('upsample_rates', []))
     if total_stride == 0:
-        print("错误: 未能计算总上采样率 (upsample_rates 可能为空?)")
+        print("Error: Failed to calculate total upsampling rate (upsample_rates might be empty?)")
         return False
 
-    # 预期输出长度
+    # Expected output length
     expected_len_short = t1_frames * total_stride
     expected_len_long = t2_frames * total_stride
-    print(f"    预期短输出样本数 = {expected_len_short} (约 {t1_frames * hparams['hop_size'] / hparams['audio_sample_rate'] * 1000:.1f} ms)")
-    print(f"    预期长输出样本数 = {expected_len_long}")
+    print(f"    Expected short output samples = {expected_len_short} (approximately {t1_frames * hparams['hop_size'] / hparams['audio_sample_rate'] * 1000:.1f} ms)")
+    print(f"    Expected long output samples = {expected_len_long}")
 
     is_consistent = False
     with torch.no_grad():
         try:
-            # 1. 创建输入
-            # 短输入
+            # 1. Create inputs
+            # Short input
             mel_short = torch.randn(batch_size, num_mels, t1_frames, device=device)
-            # 长输入 (前缀与短输入相同)
+            # Long input (prefix same as short input)
             mel_long_suffix = torch.randn(batch_size, num_mels, t2_frames - t1_frames, device=device)
             mel_long = torch.cat([mel_short, mel_long_suffix], dim=2)
 
-            # 2. 生成输出
-            print("    生成短输入对应的波形...")
+            # 2. Generate outputs
+            print("    Generating waveform corresponding to short input...")
             wav_short = generator(mel_short)
-            print(f"    生成长输入对应的波形...")
+            print(f"    Generating waveform corresponding to long input...")
             wav_long = generator(mel_long)
 
-            # 3. 检查输出形状
+            # 3. Check output shapes
             if wav_short.shape[2] != expected_len_short:
-                print(f"警告: wav_short 长度 ({wav_short.shape[2]}) 与预期 ({expected_len_short}) 不符!")
+                print(f"Warning: wav_short length ({wav_short.shape[2]}) does not match expected ({expected_len_short})!")
             if wav_long.shape[2] != expected_len_long:
-                 print(f"警告: wav_long 长度 ({wav_long.shape[2]}) 与预期 ({expected_len_long}) 不符!")
+                 print(f"Warning: wav_long length ({wav_long.shape[2]}) does not match expected ({expected_len_long})!")
 
-            # 确保比较长度不超过实际得到的长度
+            # Ensure comparison length doesn't exceed actual obtained length
             compare_len = min(expected_len_short, wav_short.shape[2], wav_long.shape[2])
             if compare_len != expected_len_short:
-                 print(f"警告: 实际比较长度为 {compare_len}, 而非预期的 {expected_len_short}")
+                 print(f"Warning: Actual comparison length is {compare_len}, not expected {expected_len_short}")
 
-            # 4. 比较前缀
+            # 4. Compare prefixes
             wav_short_prefix = wav_short[:, :, :compare_len]
             wav_long_prefix = wav_long[:, :, :compare_len]
 
             is_consistent = torch.allclose(wav_short_prefix, wav_long_prefix, atol=tolerance)
 
             if is_consistent:
-                print(f"[{module_name}] 通过前缀一致性检查。")
+                print(f"[{module_name}] Passed prefix consistency check.")
             else:
                 diff = torch.abs(wav_short_prefix - wav_long_prefix).max()
-                print(f"[{module_name}] 未通过前缀一致性检查！")
-                print(f"  最大绝对差值: {diff.item()}")
+                print(f"[{module_name}] Failed prefix consistency check!")
+                print(f"  Maximum absolute difference: {diff.item()}")
 
         except Exception as e:
-            print(f"[{module_name}] 测试过程中发生错误: {e}")
+            print(f"[{module_name}] Error occurred during testing: {e}")
             traceback.print_exc()
-            is_consistent = False # 标记为失败
+            is_consistent = False # Mark as failed
 
-    print(f"--- {module_name} 验证结束 ---")
+    print(f"--- {module_name} verification ended ---")
     return is_consistent
 
 # -----------------------------
-# Test Execution (使用 CausalUpsampleBlock)
+# Test Execution (using CausalUpsampleBlock)
 # -----------------------------
 if __name__ == "__main__":
-    print("开始验证模块的因果性（使用 CausalUpsampleBlock）...")
+    print("Starting causality verification of modules (using CausalUpsampleBlock)...")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"使用设备: {device}")
+    print(f"Using device: {device}")
 
-    # --- 组件测试参数 ---
+    # --- Component test parameters ---
     B = 2; T_in_comp = 40; C_low = 16; C_high = 64; K = 3; D = 3
 
-    # --- 1. 测试 CausalConv1d ---
-    print("\n--- 开始测试独立的 CausalConv1d ---")
+    # --- 1. Test CausalConv1d ---
+    print("\n--- Starting independent CausalConv1d test ---")
     causal_conv = CausalConv1d(C_low, C_low, kernel_size=K, dilation=D).to(device)
     verify_causality(causal_conv, (B, C_low, T_in_comp), "CausalConv1d", device=device)
-    print("--- 独立 CausalConv1d 测试结束 ---")
+    print("--- Independent CausalConv1d test ended ---")
     print("-" * 20)
 
-    # --- 定义 hparams (添加新参数) ---
+    # --- Define hparams (add new parameters) ---
     hparams_from_config = {
         'upsample_rates': [4, 5, 4, 2],
         'upsample_kernel_sizes': [8, 10, 8, 4],
@@ -713,8 +713,8 @@ if __name__ == "__main__":
     }
     # -----------------------------------------------
 
-    # --- 2. 测试 CausalUpsampleBlock ---
-    print("\n--- 开始测试独立的 CausalUpsampleBlock ---")
+    # --- 2. Test CausalUpsampleBlock ---
+    print("\n--- Starting independent CausalUpsampleBlock test ---")
     first_up_rate = hparams_from_config['upsample_rates'][0]
     initial_channel = hparams_from_config['upsample_initial_channel']
     upsample_conv_k = hparams_from_config['upsample_kernel_sizes'][0]
@@ -732,12 +732,12 @@ if __name__ == "__main__":
                                            conv_kernel_size=upsample_conv_k).to(device)
     verify_causality(causal_upsample_test, (B, initial_channel, T_in_comp),
                      f"CausalUpsampleBlock (s={first_up_rate}, conv_k={upsample_conv_k})",
-                     stride=first_up_rate, device=device) # 传入 stride
-    print("--- 独立 CausalUpsampleBlock 测试结束 ---")
+                     stride=first_up_rate, device=device) # Pass stride
+    print("--- Independent CausalUpsampleBlock test ended ---")
     print("-" * 20)
 
-    # --- 3. 测试 ResBlock ---
-    print("\n--- 开始测试 ResBlock ---")
+    # --- 3. Test ResBlock ---
+    print("\n--- Starting ResBlock test ---")
     res_block_to_test = None; res_block_name = ""
     if hparams_from_config['resblock'] == '1':
          res_channel_after_first_up = initial_channel // 2
@@ -752,46 +752,46 @@ if __name__ == "__main__":
          res_block_to_test = ResBlock2(res_channel_after_first_up, kernel_size=res_kernels[0], dilation=res_dilations[0]).to(device)
          res_block_name = f"ResBlock2 (k={res_kernels[0]}, d={res_dilations[0]})"
     if res_block_to_test: verify_causality(res_block_to_test, (B, res_channel_after_first_up, T_in_comp), res_block_name, device=device)
-    else: print("未配置有效的 ResBlock 类型，跳过测试。")
-    print("--- ResBlock 测试结束 ---")
+    else: print("No valid ResBlock type configured, skipping test.")
+    print("--- ResBlock test ended ---")
     print("-" * 20)
 
-# --- 4. 测试使用 CausalUpsampleBlock 的 HifiGanGenerator ---
-    print("\n--- 开始测试完整的 HifiGanGenerator (Causal Upsample) ---")
+# --- 4. Test HifiGanGenerator using CausalUpsampleBlock ---
+    print("\n--- Starting complete HifiGanGenerator (Causal Upsample) test ---")
     total_generator_stride = np.prod(hparams_from_config['upsample_rates'])
-    print(f"计算得到的生成器总上采样步幅: {total_generator_stride}")
+    print(f"Calculated generator total upsampling stride: {total_generator_stride}")
 
-    print(">>> 即将实例化 HifiGanGenerator...")
-    generator = None # 先置为 None
+    print(">>> About to instantiate HifiGanGenerator...")
+    generator = None # Initialize as None first
     try:
         generator = HifiGanGenerator(hparams_from_config).to(device)
-        print(">>> HifiGanGenerator 实例化并移至设备成功！")
+        print(">>> HifiGanGenerator instantiation and device transfer successful!")
     except Exception as e:
-        print(f">>> HifiGanGenerator 实例化或移至设备时出错: {e}")
+        print(f">>> Error during HifiGanGenerator instantiation or device transfer: {e}")
         traceback.print_exc()
     # ------------------------------
 
-    if generator is not None: # 仅在实例化成功后才进行测试
-        T_mel = 25 # 这个 T_mel 是给 verify_causality 用的
+    if generator is not None: # Only test after successful instantiation
+        T_mel = 25 # This T_mel is for verify_causality use
         gen_input_shape = (B, hparams_from_config['num_mels'], T_mel)
 
-        # --- 首先进行原来的逐样本因果性测试 (如果需要取消注释) ---
-        # print(">>> 即将调用 verify_causality 测试 Generator...")
+        # --- First perform original per-sample causality test (uncomment if needed) ---
+        # print(">>> About to call verify_causality to test Generator...")
         # causal_test_passed = verify_causality(generator, gen_input_shape, "HifiGanGenerator (Causal Upsample)",
         #                                       total_stride=total_generator_stride, device=device)
-        # print(f">>> Generator verify_causality 测试结果: {'通过' if causal_test_passed else '失败'}")
-        # print("-" * 10) # 分隔符
+        # print(f">>> Generator verify_causality test result: {'Passed' if causal_test_passed else 'Failed'}")
+        # print("-" * 10) # Separator
         # ----------------------------------------------------
 
-        # --- 然后进行新的前缀一致性测试 ---
-        print(">>> 即将调用 verify_prefix_consistency 测试 Generator...")
+        # --- Then perform new prefix consistency test ---
+        print(">>> About to call verify_prefix_consistency to test Generator...")
         prefix_test_passed = verify_prefix_consistency(generator, hparams_from_config, device)
-        print(f">>> Generator verify_prefix_consistency 测试结果: {'通过' if prefix_test_passed else '失败'}")
+        print(f">>> Generator verify_prefix_consistency test result: {'Passed' if prefix_test_passed else 'Failed'}")
         # ---------------------------------
 
-        print("--- 完整 HifiGanGenerator 测试结束 ---")
+        print("--- Complete HifiGanGenerator test ended ---")
     else:
-        print(">>> Generator 实例化失败，跳过因果性测试。")
+        print(">>> Generator instantiation failed, skipping causality test.")
 
     print("-" * 20)
-    print("因果性验证完成.")
+    print("Causality verification completed.")

@@ -1,0 +1,42 @@
+base_config:
+  - egs/egs_bases/config_base.yaml
+  - egs/egs_bases/tts/vocoder/hifigan.yaml
+upsample_rates: [ 8,5,4,2 ]
+upsample_kernel_sizes: [16, 10, 8, 4]
+# causal_upsample_conv_kernel_sizes: [16, 10, 8, 4]
+audio_sample_rate: 16000
+fmin: 80                
+fmax: 7600              # Maximum frequency in mel basis calculation.
+fft_size: 1024           # FFT size.
+hop_size: 320            # Hop size.
+win_size: 1024
+binary_data_dir: '/storage/baotong/workspace/streamvc/data/binary/vc_hifigannew'
+processed_data_dir: '/storage/baotong/workspace/streamvc/data/processed/vc'
+max_updates: 1000000
+max_sentences: 18
+use_afl: false
+use_different_mel_loss: true
+loss_mel_bins: 320
+upsample: 'shuffle'
+
+# binarizer_cls: data_gen.singing.binarize.SingingBinarizer
+
+num_sanity_val_steps: 5
+eval_max_batches: 5
+
+use_ms_stft: true
+stft_loss_param:
+  fft_sizes: [512, 1024, 2048]
+  hop_sizes: [160, 320, 640]
+  win_lengths: [512, 1024, 2048]
+
+mel_loss_param:
+  mel_bin: 320
+  fft_sizes: [512, 1024, 2048]
+  hop_sizes: [160, 160, 160]
+  win_lengths: [512, 1024, 2048]
+
+use_pitch_embed: false
+# task_cls: egs_usr.hifigan.HifiGanTask
+task_cls: tasks.vocoder.hifigan.HifiGanTask
+

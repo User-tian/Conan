@@ -2,7 +2,7 @@ base_config: egs/egs_bases/tts/fs.yaml
 task_cls: tasks.TechSinger.techsinger.RFSingerTask
 binary_data_dir: 'data/binary/vc_new'
 processed_data_dir: 'data/processed/vc_new'
-binarizer_cls: data_gen.tech_binarizer.TechBinarizer
+binarizer_cls: data_gen.conan_binarizer.ConanBinarizer
 
 valid_prefixes: [
   'p226_168',

@@ -68,11 +68,11 @@ class BaseSpeechDataset(BaseDataset):
 
     def _build_speaker_map(self):
         """
-        构建  spk_id → [local_idx]  的映射，但**绝不再去磁盘 mmap 拿整条样本**。
+        Build spk_id → [local_idx] mapping, but never fetch complete samples from disk mmap again.
 
-        - 如果存在 {prefix}_spk_ids.npy，则 O(N) 纯内存完成；
-        - 否则回退到旧实现（逐条 _get_item）。
-        - 每个说话人至多保留 hparams['max_samples_per_spk'] 条（默认 100）。
+        - If {prefix}_spk_ids.npy exists, complete in O(N) pure memory;
+        - Otherwise fallback to old implementation (iterating through _get_item).
+        - Keep at most hparams['max_samples_per_spk'] entries per speaker (default 100).
         """
         if self._spk_map_ready:
             return
@@ -85,20 +85,20 @@ class BaseSpeechDataset(BaseDataset):
         self.spk2indices = defaultdict(list)
 
         if os.path.exists(spk_ids_path):
-            # ---------- 快速路径 ----------
-            # mmap 方式载入，几乎不占内存、速度秒级
+            # ---------- Fast path ----------
+            # mmap loading, almost no memory usage, speed is in seconds
             spk_ids = np.load(spk_ids_path, mmap_mode='r')
-            # 只取当前 avail_idxs 子集
+            # Only take current avail_idxs subset
             local_spk_ids = spk_ids[self.avail_idxs]
 
-            # 打乱，截断时不偏向前段
+            # Shuffle, so truncation doesn't bias towards early entries
             for local_idx in np.random.permutation(len(local_spk_ids)):
                 sid = int(local_spk_ids[local_idx])
                 bucket = self.spk2indices[sid]
                 if len(bucket) < max_per_spk:
                     bucket.append(local_idx)
         else:
-            # ---------- 兼容旧数据的慢路径 ----------
+            # ---------- Slow path for legacy data compatibility ----------
             for local_idx in np.random.permutation(len(self.avail_idxs)):
                 sid = int(self._get_item(local_idx)['spk_id'])
                 bucket = self.spk2indices[sid]
@@ -193,14 +193,20 @@ class FastSpeechDataset(BaseSpeechDataset):
         hparams = self.hparams
 
         # Align mel length with f0 length
-        T = min(sample['mel'].shape[0], len(item['f0']))
+        if 'f0' in item:
+            T = min(sample['mel'].shape[0], len(item['f0']))
+        else:
+            T = sample['mel'].shape[0]
         sample['mel'] = sample['mel'][:T]
         sample['ref_mel'] = sample['ref_mel'][:T]
 
         if hparams.get('use_pitch_embed', False):
-            f0, uv = norm_interp_f0(item['f0'][:T])
-            sample['f0'] = torch.tensor(f0, dtype=torch.float32)
-            sample['uv'] = torch.tensor(uv, dtype=torch.float32)
+            if 'f0' in item:
+                f0, uv = norm_interp_f0(item['f0'][:T])
+                sample['f0'] = torch.tensor(f0, dtype=torch.float32)
+                sample['uv'] = torch.tensor(uv, dtype=torch.float32)
+            else:
+                f0, uv = None, None
         else:
             sample['f0'], sample['uv'] = None, None
 

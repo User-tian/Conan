@@ -63,8 +63,8 @@ class HifiGAN(BaseVocoder):
         self.reset_stream()
 
     def reset_stream(self):
-        """在开始新 utterance 前调用，清空 buffer"""
-        # mel 的 bin 数量一般是 80
+        """Call before starting a new utterance to clear buffer"""
+        # The number of mel bins is usually 80
         self.mel_buffer = np.zeros((self.stream_context, hparams['audio_num_mel_bins']), dtype=np.float32)
 
     def spec2wav(self, mel, **kwargs):

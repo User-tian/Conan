@@ -57,11 +57,6 @@ checkpoints/
 infer_out/
 infer_out_demo/
 
-# Trials outputs (common large artifacts)
-trials/*.pt
-trials/*.ckpt
-trials/*.wav
-
 # Model weights and large arrays (global)
 *.pt
 *.pth
@@ -77,12 +72,21 @@ trials/*.wav
 *.mp3
 *.m4a
 
-# Emformer debug dumps
-emformer_codes_*.txt
-emformer_codes_*_concatenated.txt
-
 # OS files
 .DS_Store
 Thumbs.db
 
 trials/
+egs/stage1_160.yaml
+egs/stage1_fast.yaml
+egs/vc.yaml
+
+**/TCSinger/
+**/TechSinger/
+**/TechDet/
+
+test*/
+results*/
+modules/fastspeech/
+modules/parallel_wavegan/
+modules/pe/

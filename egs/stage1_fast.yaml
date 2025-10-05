@@ -2,7 +2,7 @@ base_config: egs/egs_bases/tts/fs.yaml
 task_cls: tasks.TechSinger.techsinger.RFSingerTask
 binary_data_dir: 'data/binary/vc_ood'
 processed_data_dir: 'data/processed/vc_fast'
-binarizer_cls: data_gen.tech_binarizer.TechBinarizer
+binarizer_cls: data_gen.conan_binarizer.ConanBinarizer
 
 valid_prefixes: [
   'p231',
@@ -146,8 +146,8 @@ discriminator_optimizer_params:
 
 random_speaker_steps: 40000
 
-num_valid_plots: 10      # 每个 epoch 最多可视化多少次
-valid_plot_prob: 0.1   # 每个 batch 触发可视化的概率
+num_valid_plots: 10      # Maximum number of visualizations per epoch
+valid_plot_prob: 0.1     # Probability of triggering visualization per batch
 
 # prosody extractor
 lambda_commit: 0.25

@@ -39,3 +39,4 @@ max_valid_sentences: -1
 eval_max_batches: -1
 resume_from_checkpoint: 0
 rename_tmux: true
+test_input_dir: ''

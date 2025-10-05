@@ -116,13 +116,13 @@ class PitchPredictor(nn.Module):
             in_chans = idim if idx == 0 else n_chans
             self.conv.append(
                 nn.Sequential(
-                    CausalConv1d(in_chans, n_chans, kernel_size),  # 只左填充
+                    CausalConv1d(in_chans, n_chans, kernel_size),  # Only left padding
                     ReLU(),
                     Dropout(dropout_rate),
                 )
             )
 
-        # 逐帧归一化（对最后一维 C 做统计）
+        # Frame-wise normalization (statistics on the last dimension C)
         self.post_ln = nn.LayerNorm(n_chans)
         self.linear  = Linear(n_chans, odim)
 
@@ -133,11 +133,11 @@ class PitchPredictor(nn.Module):
         Returns:
             (B, T, odim)
         """
-        x = x.transpose(1, 2)  # (B, H, T) —— 卷积期望的格式
+        x = x.transpose(1, 2)  # (B, H, T) — format expected by convolution
         for f in self.conv:
             x = f(x)           # (B, C, T)
 
-        # 逐帧 LayerNorm（不跨时间）
+        # Frame-wise LayerNorm (no cross-time)
         x = x.transpose(1, 2)  # (B, T, C)
         x = self.post_ln(x)
 

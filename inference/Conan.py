@@ -13,7 +13,7 @@ from utils.audio.io import save_wav
 from tasks.tts.vocoder_infer.base_vocoder import get_vocoder_cls
 
 # TechSinger acoustic model
-from modules.TechSinger.techsinger import RFSinger
+from modules.Conan.Conan import Conan
 # Emformer feature extractor
 from modules.Emformer.emformer import EmformerDistillModel
 __all__ = ["StreamingVoiceConversion"]
@@ -33,7 +33,7 @@ class StreamingVoiceConversion:
         self._vocoder_warm_zero()
 
     def _build_model(self):
-        m = RFSinger(0, self.hparams)
+        m = Conan(0, self.hparams)
         m.eval()
         load_ckpt(m, self.hparams["work_dir"], strict=False)
         return m.to(self.device)
@@ -48,7 +48,7 @@ class StreamingVoiceConversion:
     def _build_emformer(self):
         emformer = EmformerDistillModel(self.hparams, output_dim=100)
         # load checkpoint
-        load_ckpt_emformer(emformer, self.hparams["emformer_ckpt"], strict=False)
+        load_ckpt(emformer, self.hparams["emformer_ckpt"], strict=False)
         emformer.eval()
         return emformer.to(self.device)
 
@@ -70,73 +70,16 @@ class StreamingVoiceConversion:
         )["mel"]
         return np.clip(mel, hparams["mel_vmin"], hparams["mel_vmax"])
 
-    def infer_once(self, inp: Dict):
+    def infer_once(self, inp: Dict, spk_emb=None):
+        if spk_emb is not None:
+            spk_emb = torch.from_numpy(spk_emb).float().to(self.device)
         # 1. Load reference mel
         ref_mel_np = self._wav_to_mel(inp["ref_wav"])
         ref_mel = torch.from_numpy(ref_mel_np).float().to(self.device)
 
         # 2. Load src mel
-        # src_mel_np = self._wav_to_mel(inp["src_wav"])
-        # src_mel = torch.from_numpy(src_mel_np).unsqueeze(0).to(self.device)  # [1, T, 80]
-        ## original way to get src mel
-        import soundfile as sf
-        from librosa.util import normalize
-        from librosa.filters import mel as librosa_mel_fn
-        audio, sampling_rate = sf.read(inp["src_wav"], dtype='int16')
-        
-        audio = audio / 32768
-        audio = normalize(audio) * 0.95  # 标准化音频
-        
-        audio = torch.FloatTensor(audio)
-        audio = audio.unsqueeze(0)
-        def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):
-            return torch.log(torch.clamp(x, min=clip_val) * C)
-        def spectral_normalize_torch(magnitudes):
-            output = dynamic_range_compression_torch(magnitudes)
-            return output
-        def mel_spectrogram(y, n_fft, num_mels, sampling_rate, hop_size, win_size, fmin, fmax, center=False):
-            if torch.min(y) < -1.:
-                print('min value is ', torch.min(y))
-            if torch.max(y) > 1.:
-                print('max value is ', torch.max(y))
-            mel_basis = {}
-            hann_window = {}
-            if fmax not in mel_basis:
-                mel = librosa_mel_fn(sr=sampling_rate, n_fft=n_fft, n_mels=num_mels, fmin=fmin, fmax=fmax)
-                mel_basis[str(fmax)+'_'+str(y.device)] = torch.from_numpy(mel).float().to(y.device)
-                hann_window[str(y.device)] = torch.hann_window(win_size).to(y.device)
-
-            y = torch.nn.functional.pad(y.unsqueeze(1), (int((n_fft-hop_size)/2), int((n_fft-hop_size)/2)), mode='reflect')
-            y = y.squeeze(1)
-
-            spec = torch.stft(y, n_fft, hop_length=hop_size, win_length=win_size, window=hann_window[str(y.device)],
-                            center=center, pad_mode='reflect', normalized=False, onesided=True, return_complex=False)
-
-            spec = torch.sqrt(spec.pow(2).sum(-1)+(1e-9))
-
-            spec = torch.matmul(mel_basis[str(fmax)+'_'+str(y.device)], spec)
-            spec = spectral_normalize_torch(spec) # log((x>thre) * C) -> log compression
-
-            return spec
-        def extract_mel_features(audio):
-            """从音频提取mel特征"""
-            # 提取mel特征
-            mel = mel_spectrogram(
-                audio, 
-                hparams["fft_size"], 
-                hparams["audio_num_mel_bins"], 
-                hparams["audio_sample_rate"], 
-                hparams["hop_size"], 
-                hparams["win_size"], 
-                hparams["fmin"], 
-                None, 
-                center=False
-            )
-            return mel.permute(0, 2, 1).contiguous()  # 转换为[B, T, F]格式
-        # 提取mel特征
-        mel = extract_mel_features(audio)
-        mel = mel.to(self.device)
-        src_mel = mel
+        src_mel_np = self._wav_to_mel(inp["src_wav"])
+        src_mel = torch.from_numpy(src_mel_np).unsqueeze(0).to(self.device)  # [1, T, 80]
         total_frames = src_mel.shape[1]
         # 3. Streaming Emformer + RFSinger with proper state management
         chunk_size = self.hparams["chunk_size"] // 20  # frames per chunk (20ms per frame)
@@ -191,9 +134,9 @@ class StreamingVoiceConversion:
             with torch.no_grad():
                 out = self.model(
                     content=all_codes,
-                    spk_embed=None,
+                    spk_embed=spk_emb,
                     target=None,
-                    ref=ref_mel.unsqueeze(0),
+                    ref=None, # ref_mel.unsqueeze(0),
                     f0=None,
                     uv=None,
                     infer=True,
@@ -225,24 +168,26 @@ class StreamingVoiceConversion:
         
         return wav_pred, mel_pred.cpu().numpy()
 
-    def test_multiple_sentences(self, test_cases: List[Dict]):
+    def test_multiple_sentences(self, test_cases: List[Dict], spk_embs=None):
         os.makedirs("infer_out_demo", exist_ok=True)
         for i, inp in enumerate(test_cases):
-            wav, mel = self.infer_once(inp)
-            ref_name = os.path.splitext(os.path.basename(inp["ref_wav"]))[0]
-            src_name = os.path.splitext(os.path.basename(inp["src_wav"]))[0]
-            save_path = f"infer_out_demo/{ref_name}_{src_name}.wav"
-            save_wav(wav, save_path, self.hparams["audio_sample_rate"])
-            print(f"Saved output: {save_path}")
+            for j, emb in enumerate(spk_embs):
+                wav, mel = self.infer_once(inp, emb)
+                ref_name = os.path.splitext(os.path.basename(inp["ref_wav"]))[0]
+                src_name = os.path.splitext(os.path.basename(inp["src_wav"]))[0]
+                save_path = f"infer_out_demo/{j}_{src_name}.wav"
+                save_wav(wav, save_path, self.hparams["audio_sample_rate"])
+                print(f"Saved output: {save_path}")
 
 
 if __name__ == "__main__":
     set_hparams()
     # Example usage: update with your own wav paths
+    spk_embs = np.load("/storageSSD/huiran/src/NVAE-DarkStream/output/nvae_conan/emb.npy")
     demo = [
         # {"ref_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p226_005_mic2.wav", "src_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p236_005_mic2.wav"},
         {"ref_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p226_005_mic2.wav", "src_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p246_005_mic2.wav"},
     ]
     
     engine = StreamingVoiceConversion(hparams)
-    engine.test_multiple_sentences(demo) 
+    engine.test_multiple_sentences(demo, spk_embs)

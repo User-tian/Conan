@@ -188,14 +188,14 @@ class StyleTransferStreaming:
         return wav_pred, mel_pred
     
     def test_multiple_sentences(self, test_cases: List[Dict]):
-        """测试多个句子并生成报告"""
+        """Test multiple sentences and generate report"""
         # print(f"\n{'='*50}")
         # print(f"Starting multi-sentence test with {len(test_cases)} sentences")
         # print(f"{'='*50}\n")
         
         os.makedirs("infer_out_demo", exist_ok=True)
         
-        # 处理所有句子
+        # Process all sentences
         for i, inp in enumerate(test_cases):
             wav, mel = self.infer_once(inp)
             save_path = f"infer_out_demo/{inp['ref_name']}_{inp['gen_name']}.wav"

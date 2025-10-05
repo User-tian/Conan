@@ -4,8 +4,13 @@ import torchaudio
 import time
 
 class EmformerDistillModel(nn.Module):
-    def __init__(self, hparams, input_dim=80, output_dim=768):  # HuBERT通常输出768维
+    def __init__(self, hparams, input_dim=80, output_dim=None):  # output_dim now comes from hparams
         super().__init__()
+        
+        # Get output_dim from hparams if not provided, with fallback to default
+        if output_dim is None:
+            output_dim = hparams.get('emformer_output_dim', 768)  # Default to 768 if not specified
+        
         self.emformer = torchaudio.models.Emformer(
             input_dim=input_dim,
             num_heads=8,
@@ -15,8 +20,8 @@ class EmformerDistillModel(nn.Module):
             left_context_length=50,
             right_context_length=hparams['right_context'],
         )
-        self.segment_length = hparams['chunk_size'] // 20  # 每个段的长度，单位为帧
-        # 如果输出维度与HuBERT不同，添加投影层
+        self.segment_length = hparams['chunk_size'] // 20  # Length per segment in frames
+        # If output dimension differs from HuBERT, add projection layer
         self.proj = nn.Linear(input_dim, output_dim) if input_dim != output_dim else nn.Identity()
         self.right_context_len = hparams['right_context']
         self.mode = hparams.get('mode', None)
@@ -31,7 +36,7 @@ class EmformerDistillModel(nn.Module):
         # x = mel_input.transpose(0, 1)
         # lengths = torch.full((x.size(1),), x.size(0), device=x.device)
         
-        # 获取Emformer输出
+        # Get Emformer output
         output, lengths = self.emformer(mel_input, lengths)
         if self.mode == 'both':
             output1 = self.proj1(output)

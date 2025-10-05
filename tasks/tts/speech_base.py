@@ -56,6 +56,9 @@ class SpeechBaseTask(BaseTask):
     ##########################
     @data_loader
     def train_dataloader(self):
+        print("Train Dataloader")
+        print(hparams)
+        
         if hparams['train_sets'] != '':
             train_sets = hparams['train_sets'].split("|")
             # check if all train_sets have the same spk map and dictionary
