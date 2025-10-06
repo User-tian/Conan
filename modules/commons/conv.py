@@ -174,7 +174,7 @@ class CausalResidualBlock(nn.Module):
             x_ = blk(x)
             if self.dropout > 0 and self.training:
                 x_ = F.dropout(x_, self.dropout, self.training)
-            x = (x + x_) * nonpadding  # 保持掩码对齐
+            x = (x + x_) * nonpadding  # maintain mask alignment
         return x
 
 
@@ -182,11 +182,11 @@ class CausalConvBlocks(nn.Module):
     """Stack of CausalResidualBlock + causal post‑net conv.
 
     Args:
-        hidden_size: 通道数 (d_model)
-        out_dims: 输出通道数
-        dilations: 每个 residual block 的 dilation 序列
-        kernel_size: 卷积核大小
-        is_BTC: True 则输入 [B, T, C]，否则 [B, C, T]
+        hidden_size: number of channels (d_model)
+        out_dims: output channel count
+        dilations: dilation sequence for each residual block
+        kernel_size: convolution kernel size
+        is_BTC: True means input [B, T, C], otherwise [B, C, T]
     """
 
     def __init__(
@@ -281,8 +281,8 @@ class SinusoidalPosEmb(nn.Module):
 class CausalFM(nn.Module):
     """
     Stack of CausalResidualBlock + causal post‑net conv,
-    增加 diffusion_step 和 cond 条件输入，补偿因果卷积带来的时延
-    并保证 cond 输入也是因果对齐
+    adds diffusion_step and cond conditional inputs, compensates for delay caused by causal convolution
+    and ensures cond input is also causally aligned
     """
     def __init__(
         self,
@@ -306,7 +306,7 @@ class CausalFM(nn.Module):
         super().__init__()
         self.is_BTC = is_BTC
 
-        # diffusion_step 嵌入和 MLP
+        # diffusion_step embedding and MLP
         self.diff_emb = SinusoidalPosEmb(hidden_size)
         self.diff_mlp = nn.Sequential(
             nn.Linear(hidden_size, hidden_size * 4),
@@ -314,17 +314,17 @@ class CausalFM(nn.Module):
             nn.Linear(hidden_size * 4, hidden_size),
         )
 
-        # cond 投影
+        # cond projection
         self.cond_proj = nn.Conv1d(cond_dims, hidden_size, 1)
         nn.init.kaiming_normal_(self.cond_proj.weight, nonlinearity="linear")
 
-        # 如果指定 num_layers，则统一 dilations
+        # if num_layers is specified, unify dilations
         if num_layers is not None:
             dilations = [1] * num_layers
         self.dilations = dilations
         self.kernel_size = kernel_size
 
-        # 原有残差块
+        # original residual blocks
         self.res_blocks = nn.Sequential(
             *[
                 CausalResidualBlock(
@@ -348,9 +348,9 @@ class CausalFM(nn.Module):
             nn.Conv1d(hidden_size, out_dims, post_net_kernel, padding=0),
         )
 
-        # 计算因果卷积时延
+        # calculate causal convolution delay
         self.receptive_field = 1 + sum((kernel_size - 1) * d for d in self.dilations)
-        self.delay = self.receptive_field - 1  # 需要补偿的帧数
+        self.delay = self.receptive_field - 1  # number of frames to compensate
 
         if init_weights:
             self.apply(init_weights_func)
@@ -368,12 +368,12 @@ class CausalFM(nn.Module):
             diffusion_step: [B, 1]
             cond: [B, T, cond_dims] if is_BTC else [B, cond_dims, T]
         """
-        # 转到 [B, H, T]
+        # convert to [B, H, T]
         if self.is_BTC:
             x = x.transpose(1, 2)
             cond = cond.transpose(1, 2)
 
-        # 推理模式下补偿输入端时延：对 x 和 cond 都进行因果 pad
+        # in inference mode compensate input delay: apply causal pad to both x and cond
         if not self.training:
             # pad x
             first_x = x[:, :, :1]                           # [B, H, 1]
@@ -384,33 +384,33 @@ class CausalFM(nn.Module):
             pad_c   = first_c.expand(-1, -1, self.delay)    # [B, C, delay]
             cond = torch.cat([pad_c, cond], dim=-1)         # [B, C, T+delay]
 
-        # 构建 nonpadding mask
+        # build nonpadding mask
         if nonpadding is None:
             nonpadding = (x.abs().sum(1) > 0).float()[:, None, :]
         elif self.is_BTC:
             nonpadding = nonpadding.transpose(1, 2)
 
-        # cond 投影
+        # cond projection
         cond_feat = self.cond_proj(cond)
 
-        # diffusion_step 嵌入
+        # diffusion_step embedding
         diff = self.diff_emb(diffusion_step)  # [B, hidden_size]
         diff = self.diff_mlp(diff)           # [B, hidden_size]
         diff = diff.unsqueeze(-1)            # [B, hidden_size, 1]
 
-        # 条件注入
+        # conditional injection
         x = x + cond_feat + diff
 
-        # 主干计算
+        # main computation
         x = self.res_blocks(x) * nonpadding
         x = self.last_norm(x) * nonpadding
         x = self.post_net1(x) * nonpadding
 
-        # 推理模式下输出端裁剪掉补帧
+        # in inference mode crop padding frames from output
         if not self.training:
             x = x[:, :, self.delay:]
 
-        # 转回原始布局
+        # convert back to original layout
         if self.is_BTC:
             x = x.transpose(1, 2)
         return x

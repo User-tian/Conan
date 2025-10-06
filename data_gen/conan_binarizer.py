@@ -236,15 +236,15 @@ class VCBinarizer(BaseBinarizer):
     def split_train_test_set(self, item_names):
         item_names = deepcopy(item_names)
 
-        # 先找出测试/验证集
+        # first find test/validation sets
         test_item_names  = [x for x in item_names if any(ts in x for ts in hparams['test_prefixes'])]
         valid_item_names = [x for x in item_names if any(ts in x for ts in hparams['valid_prefixes'])]
 
-        # ⚠️ 关键：只构造一次 set
+        # ⚠️ Key: construct set only once
         test_set = set(test_item_names)
         valid_set = set(valid_item_names)
 
-        # 训练集 = 既不在测试集也不在验证集
+        # training set = neither in test set nor validation set
         train_item_names = [x for x in item_names if x not in test_set and x not in valid_set]
 
         logging.info(f"train {len(train_item_names)}")
@@ -322,15 +322,15 @@ class VCBinarizer(BaseBinarizer):
             #     if self.binarization_args['with_spk_embed'] else None
             if item is None:
                 continue
-            builder.add_item(item)          # spk_id 已包含在 item
+            builder.add_item(item)          # spk_id is already included in item
             lengths.append(item['len'])
-            spk_ids.append(item['spk_id'])  # 👈 收集顺序一致的 spk_id
+            spk_ids.append(item['spk_id'])  # 👈 collect spk_id in consistent order
             total_sec += item['sec']
 
 
         builder.finalize()
         np.save(f'{data_dir}/{prefix}_lengths.npy', np.array(lengths,  np.int32))
-        np.save(f'{data_dir}/{prefix}_spk_ids.npy', np.array(spk_ids, np.int32))  # ✅ 新增
+        np.save(f'{data_dir}/{prefix}_spk_ids.npy', np.array(spk_ids, np.int32))  # ✅ newly added
         print(f"| {prefix} total duration: {total_sec:.2f}s, #items: {len(lengths)}")
 
 

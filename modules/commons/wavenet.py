@@ -108,8 +108,8 @@ def kaiming_init(module):
 
 class CausalConv1d(nn.Module):
     """
-    只在左侧做 padding 的 1-D dilated 卷积:
-    输出第 t 帧只依赖于 ≤t 的输入。
+    Only left-side padding 1-D dilated convolution:
+    Output frame t only depends on input ≤t.
     """
     def __init__(self,
                  in_channels: int,
@@ -126,26 +126,26 @@ class CausalConv1d(nn.Module):
                       dilation=dilation,
                       **kwargs)
         )
-        # inline weight-norm；保持与旧版一致
+        # inline weight-norm; keep consistent with old version
         self.conv = nn.utils.weight_norm(self.conv, name='weight')
-        # 需要在左侧补多少帧
+        # How many frames to pad on the left
         self.left_pad = dilation * (kernel_size - 1)
 
     def forward(self, x):
-        # 只 pad 左边
+        # Only pad left side
         x = F.pad(x, (self.left_pad, 0))
         return self.conv(x)
 
 class CausalWN(nn.Module):
     """
     Causal WaveNet residual block.
-    接口与原实现保持一致，可直接替换。
+    Interface remains consistent with original implementation, can be directly replaced.
     """
     def __init__(self, hidden_size, kernel_size, dilation_rate, n_layers,
                  c_cond=0, p_dropout=0, share_cond_layers=False, is_BTC=False):
         super().__init__()
-        assert kernel_size % 2 == 1, "kernel_size 必须为奇数"
-        assert hidden_size % 2 == 0, "hidden_size 必须为偶数"
+        assert kernel_size % 2 == 1, "kernel_size must be odd"
+        assert hidden_size % 2 == 0, "hidden_size must be even"
 
         self.is_BTC = is_BTC
         self.hidden_size = hidden_size
@@ -160,12 +160,12 @@ class CausalWN(nn.Module):
         self.res_skip_layers = nn.ModuleList()
         self.drop = nn.Dropout(p_dropout)
 
-        # 条件卷积层（kernel_size=1 本身就是 causal）
+        # conditional convolution layer (kernel_size=1 is inherently causal)
         if c_cond != 0 and not share_cond_layers:
             cond_layer = nn.Conv1d(c_cond, 2 * hidden_size * n_layers, 1)
             self.cond_layer = nn.utils.weight_norm(cond_layer, name='weight')
 
-        # 堆叠 dilated causal conv
+        # stack dilated causal conv
         for i in range(n_layers):
             dilation = dilation_rate ** i
             in_layer = CausalConv1d(hidden_size,
@@ -174,14 +174,14 @@ class CausalWN(nn.Module):
                                     dilation=dilation)
             self.in_layers.append(in_layer)
 
-            # 最后一层只输出 skip，不再输出 residual
+            # last layer only outputs skip, no longer outputs residual
             res_skip_channels = 2 * hidden_size if i < n_layers - 1 else hidden_size
             res_skip_layer = nn.Conv1d(hidden_size, res_skip_channels, 1)
             res_skip_layer = nn.utils.weight_norm(res_skip_layer, name='weight')
             self.res_skip_layers.append(res_skip_layer)
 
     # --------------------------------------------------
-    #  前向传播：逻辑保持不变
+    #  forward propagation: logic remains unchanged
     # --------------------------------------------------
     def forward(self, x, nonpadding=None, cond=None):
         if self.is_BTC:          # [B,T,C] → [B,C,T]
@@ -218,7 +218,7 @@ class CausalWN(nn.Module):
             output = output.transpose(1, 2)   # [B,C,T] → [B,T,C]
         return output
 
-    # 方便导出推理模型
+    # convenient for exporting inference model
     def remove_weight_norm(self):
         def _remove(m):
             try:

@@ -141,7 +141,7 @@ class PitchPredictor(nn.Module):
         x = x.transpose(1, 2)  # (B, T, C)
         x = self.post_ln(x)
 
-        # 投到目标维度
+        # Project to target dimension
         x = self.linear(x)     # (B, T, odim)
         return x
 
@@ -151,7 +151,7 @@ class PitchPredictor(nn.Module):
 #         idim: int,               # hidden_size
 #         n_layers: int = 5,
 #         n_chans: int = 384,
-#         odim: int = 2,           # 输出 2：uv + f0(or log-f0)
+#         odim: int = 2,           # output 2: uv + f0(or log-f0)
 #         kernel_size: int = 5,
 #         dropout_rate: float = 0.1,
 #     ):
@@ -160,9 +160,9 @@ class PitchPredictor(nn.Module):
 #         for idx in range(n_layers):
 #             in_chans = idim if idx == 0 else n_chans
 #             self.conv.append(nn.Sequential(
-#                 CausalConv1d(in_chans, n_chans, kernel_size),   # ← 只左填充
+#                 CausalConv1d(in_chans, n_chans, kernel_size),   # ← only left padding
 #                 ReLU(),
-#                 GroupNorm(1, n_chans, affine=True),             # ← 只按通道归一化
+#                 GroupNorm(1, n_chans, affine=True),             # ← only channel normalization
 #                 Dropout(dropout_rate)
 #             ))
 #         self.linear = Linear(n_chans, odim)

@@ -32,7 +32,7 @@ class EmformerDistillModel(nn.Module):
         """
         mel_input: [B, T, mel_dim]
         """
-        # Emformer要求输入形状为 [T, B, F]
+        # Emformer requires input shape to be [T, B, F]
         # x = mel_input.transpose(0, 1)
         # lengths = torch.full((x.size(1),), x.size(0), device=x.device)
         

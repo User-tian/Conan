@@ -90,3 +90,9 @@ results*/
 modules/fastspeech/
 modules/parallel_wavegan/
 modules/pe/
+
+inference/test_casual.py
+inference/test_mel.py
+inference/test_vocoder.py
+inference/techsinger.py
+inference/eva*

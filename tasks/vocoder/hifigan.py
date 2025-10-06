@@ -452,7 +452,7 @@ import numpy as np
 
 from modules.vocoder.hifigan.hifigan_causal import HifiGanGenerator
 from utils.commons.hparams import hparams
-import utils.audio as audio  # 用于保存 WAV 文件
+import utils.audio as audio  # for saving WAV files
 
 
 def deep_merge_dicts(base: dict, override: dict) -> dict:
