@@ -16,7 +16,6 @@ import soundfile as sf
 from librosa.filters import mel as librosa_mel_fn
 from librosa.util import normalize
 import resampy
-# TechSinger acoustic model
 from modules.Conan.Conan import Conan
 # Emformer feature extractor
 from modules.Emformer.emformer import EmformerDistillModel

@@ -1,3 +1,6 @@
+torchdyn==1.0.6
+torch==2.5.1
+torchaudio==2.5.1
 chardet==5.2.0
 einops==0.8.0
 g2p_en==2.1.0
@@ -23,4 +26,3 @@ textgrid==1.6.1
 tqdm==4.66.5
 webrtcvad==2.0.10
 scikit-image==0.25.1
-torchdyn==1.0.6

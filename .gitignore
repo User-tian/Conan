@@ -44,7 +44,10 @@ wandb/
 lightning_logs/
 
 # Project data & generated artifacts (keep placeholders)
-data/
+data/binary/
+data/processed/
+!data/processed/spker_set.json
+!data/processed/metadata_example.json
 !data/README.md
 !data/.gitkeep
 
@@ -88,8 +91,6 @@ egs/vc.yaml
 test*/
 results*/
 modules/fastspeech/
-modules/parallel_wavegan/
-modules/pe/
 
 inference/test_casual.py
 inference/test_mel.py

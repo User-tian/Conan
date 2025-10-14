@@ -3,7 +3,7 @@ from torch import nn
 
 from modules.commons.layers import LayerNorm
 import torch.nn.functional as F
-from modules.TechSinger.diff.net import CausalConv1d
+from modules.Conan.diff.net import CausalConv1d
 from torch.nn import GroupNorm, Dropout, ReLU, Linear
 
 class DurationPredictor(torch.nn.Module):

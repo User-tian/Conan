@@ -12,7 +12,6 @@ from utils.audio import librosa_wav2spec
 from utils.audio.io import save_wav
 from tasks.tts.vocoder_infer.base_vocoder import get_vocoder_cls
 
-# TechSinger acoustic model
 from modules.Conan.Conan import Conan
 # Emformer feature extractor
 from modules.Emformer.emformer import EmformerDistillModel

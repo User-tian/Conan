@@ -51,56 +51,35 @@ cd Conan
 
 2. **Create a virtual environment**:
 ```bash
-python -m venv conan_env
-source conan_env/bin/activate  # On Windows: conan_env\Scripts\activate
+conda create -n conan python=3.10
+conda activate conan
 ```
 
 3. **Install dependencies**:
 ```bash
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 ```
-
-4. **Install the package**:
-```bash
-pip install -e .
-```
-
 ## 📊 Data Preparation
 
 ### Dataset Structure
-Prepare your dataset in the following structure:
+You only need to prepare the metadata.json file in the `data/processed/` directory.
 ```
 data/
-├── raw/
-│   ├── speaker1/
-│   │   ├── audio1.wav
-│   │   ├── audio2.wav
-│   │   └── ...
-│   ├── speaker2/
-│   │   └── ...
-│   └── ...
-├── processed/
-│   ├── metadata.json
-│   └── ...
-└── binary/
-    └── vc/
-        ├── train.bin
-        ├── valid.bin
-        └── ...
-```
+└── processed/
+    ├── metadata.json
+    └── spker_set.json
 
 ### Metadata Format
+There is an example "example_metadata.json" file in the `data/processed/vc/` directory.
 The `metadata.json` file should contain entries like:
 ```json
 [
   {
     "item_name": "speaker1_audio1",
-    "txt": "Hello world",
-    "wav_fn": "data/raw/speaker1/audio1.wav",
-    "spk_id": 0,
-    "f0_fn": "data/raw/speaker1/audio1.f0",
-    "hubert_fn": "data/processed/speaker1/audio1.hubert"
+    "wav_fn": "data/raw/speaker1/audio1.wav", // Path to the raw audio file
+    "spk_embed": "0.1 0.2 0.3 ...", // Speaker embedding vector
+    "duration": 3.5, // Duration in seconds
+    "hubert": "12 34 56 ..." // HuBERT features as space-separated string
   }
 ]
 ```
@@ -109,7 +88,7 @@ The `metadata.json` file should contain entries like:
 
 1. **Extract F0 features using RMVPE**:
 ```bash
-export PYTHONPATH=/storage/baotong/workspace/Conan:$PYTHONPATH
+export PYTHONPATH=/storage/baotong/workspace/Conan:$PYTHONPATH # (optional) you may need to set the PYTHONPATH for import dependencies
 python trials/extract_f0_rmvpe.py \
     --input_dir /path/to/audio/files \
     --output_dir /path/to/f0/output

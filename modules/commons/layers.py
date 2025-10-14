@@ -1,11 +1,3 @@
-'''
-Author: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
-Date: 2025-02-19 06:10:02
-LastEditors: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
-LastEditTime: 2025-03-03 13:32:35
-FilePath: /home2/zhangyu/gwx/github/TechSinger/modules/commons/layers.py
-Description: This is the default setting, please set `customMade`, open koroFileHeader to view configuration and set: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
-'''
 import torch
 from torch import nn
 

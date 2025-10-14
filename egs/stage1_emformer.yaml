@@ -1,6 +1,6 @@
 base_config: egs/egs_bases/tts/fs.yaml
 task_cls: tasks.Conan.Conan.ConanTask
-binary_data_dir: 'data/binary/vc_emformer'
+binary_data_dir: 'data/binary/vc_6layer'
 processed_data_dir: 'data/processed/vc'
 binarizer_cls: data_gen.conan_binarizer.ConanBinarizer
 
