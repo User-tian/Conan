@@ -54,7 +54,7 @@ def griffin_lim_torch(S, hop_size, win_size, fft_size, angles=None, n_iters=30):
     window = torch.hann_window(win_size).to(S.device)
     y = istft(S, angles, hop_size, win_size, fft_size, window=window)
     for i in range(n_iters):
-        x_stft = torch.stft(y, fft_size, hop_size, win_size, window)
+        x_stft = torch.stft(y, fft_size, hop_length=hop_size, win_length=win_size, window=window)
         x_stft = x_stft[..., 0] + 1j * x_stft[..., 1]
         angles = torch.angle(x_stft)
         y = istft(S, angles, hop_size, win_size, fft_size, window=window)

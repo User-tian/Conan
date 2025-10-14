@@ -1,9 +1,10 @@
-# Conan: Streaming Voice Conversion with Diffusion Models
+# Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-1.11+-red.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+This is the official implementation of our ASRU 2025 paper "Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion"
 ![Architecture](figs/arch.png)
 Zero-shot online voice conversion (VC) holds significant promise for real-time communications and entertainment. 
 However, current VC models struggle to preserve semantic fidelity under real-time constraints, deliver natural-sounding conversions, and adapt effectively to unseen speaker characteristics.
@@ -68,7 +69,7 @@ data/
 └── processed/
     ├── metadata.json
     └── spker_set.json
-
+```
 ### Metadata Format
 There is an example "example_metadata.json" file in the `data/processed/vc/` directory.
 The `metadata.json` file should contain entries like:
@@ -86,48 +87,41 @@ The `metadata.json` file should contain entries like:
 
 ### Data Preprocessing Steps
 
-1. **Extract F0 features using RMVPE**:
+1. **Extract F0 features using RMVPE (needed only for main model training)**:
 ```bash
 export PYTHONPATH=/storage/baotong/workspace/Conan:$PYTHONPATH # (optional) you may need to set the PYTHONPATH for import dependencies
 python trials/extract_f0_rmvpe.py \
-    --input_dir /path/to/audio/files \
-    --output_dir /path/to/f0/output
+    --config  /u/usertian/workspace/streamvc/egs/conan.yaml \
+    --batch-size 80 \
+    --save-dir /path/to/audio  
 ```
-
-2. **Extract HuBERT features**:
+F0 will be saved to the same level folder as the audio folder.
+File structure: (an example below)
+```data/
+└── audio/
+    ├── p225_001.wav
+    ├── ...
+└── audio_f0/
+    ├── p225_001.npy
+    ├── ...
+```
+2. **Binarize the dataset**:
 ```bash
-python trials/extract_hubert_features.py \
-    --input_dir /path/to/audio/files \
-    --output_dir /path/to/hubert/output
+python data_gen/tts/runs/binarize.py --config egs/conan.yaml
 ```
-
-3. **Binarize the data**:
-```bash
-python data_gen/tts/runs/binarize.py --config egs/emformer.yaml
-```
-
+(You can use this config for all 3-stage training binarization)
 ### Configuration
 Update the configuration files in `egs/` directory to match your dataset:
-- `egs/stage1.yaml`: Main training configuration
+- `egs/conan_emformer.yaml`: Main training configuration
 - `egs/emformer.yaml`: Emformer training configuration
-- `egs/hifinsf_16k320_shuffle.yaml`: Vocoder training configuration
+- `egs/hifi_16k320_shuffle.yaml`: Vocoder training configuration
 
 Key parameters to adjust:
 ```yaml
 # Dataset paths
 binary_data_dir: 'data/binary/vc'
 processed_data_dir: 'data/processed/vc'
-
-# Audio parameters
-audio_sample_rate: 16000
-hop_size: 320
-win_size: 1024
-
-# Speaker settings
-num_spk: 120  # Number of speakers in your dataset
-use_spk_id: true
 ```
-
 ## 🎯 Training
 
 ### Stage 1: Train Emformer
@@ -141,60 +135,33 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py \
 ### Stage 2: Train Main Conan Model
 ```bash
 CUDA_VISIBLE_DEVICES=0 python tasks/run.py \
-    --config egs/stage1_emformer.yaml \
+    --config egs/conan_emformer.yaml \
     --exp_name conan_training \
     --reset
 ```
 
 ### Stage 3: Train HiFi-GAN Vocoder
 ```bash
-CUDA_VISIBLE_DEVICES=1 python tasks/run.py \
-    --config egs/hifinsf_16k320_shuffle.yaml \
+CUDA_VISIBLE_DEVICES=0 python tasks/run.py \
+    --config egs/hifi_16k320_shuffle.yaml \
     --exp_name hifigan_training \
     --reset
 ```
 
-### Training Monitoring
-Monitor training progress using TensorBoard:
-```bash
-tensorboard --logdir checkpoints/
-```
-
 ## 🔮 Inference
 
-### Basic Voice Conversion
+### Streaming Voice Conversion
 ```bash
 CUDA_VISIBLE_DEVICES=0 python inference/Conan.py \
-    --config egs/stage1_emformer.yaml \
-    --exp_name checkpoints/conan_mainmodeltest
+    --config egs/conan_emformer.yaml \
+    --exp_name conan
 ```
+Use the exp_name that contains the trained main model checkpoints, and update your config with the trained Emformer checkpoint and HifiGAN checkpoint.
 
-### Batch Voice Conversion
-```bash
-CUDA_VISIBLE_DEVICES=0 python inference/run_voice_conversion.py \
-    --config egs/stage1_previousemformer.yaml \
-    --exp_name stage1_clean
-```
+## Checkpoints
+You can download pre-trained model checkpoints from [Google Drive](https://drive.google.com/drive/folders/1QhnECo2L4xfXDgdrnM6L1xpsH7u3iRvj?usp=sharing).
 
-### Streaming Voice Conversion
-For real-time streaming voice conversion, use the `StreamingVoiceConversion` class:
-```python
-from inference.Conan import StreamingVoiceConversion
-from utils.commons.hparams import set_hparams
-
-# Load configuration
-set_hparams("egs/stage1_emformer.yaml")
-
-# Initialize the streaming converter
-converter = StreamingVoiceConversion(hparams)
-
-# Convert audio in real-time
-output_audio = converter.convert_streaming(
-    source_audio="path/to/source.wav",
-    target_speaker_id=1
-)
-```
-
+Note: As we previous developed the Emformer training branch on another codebase, we provided another inference script for it `inference/Conan_previous.py`.
 ## 📁 Project Structure
 
 ```
@@ -215,59 +182,19 @@ Conan/
 │   ├── conan_binarizer.py    # Data binarization
 │   └── ...
 ├── egs/                       # Configuration files
-│   ├── stage1.yaml           # Main training config
+│   ├── conan.yaml           # Main training config
 │   ├── emformer.yaml         # Emformer config
 │   └── ...
 ├── utils/                     # Utility functions
 └── checkpoints/              # Model checkpoints
 ```
-
-## ⚙️ Configuration
-
-### Key Configuration Parameters
-
-#### Audio Processing
-```yaml
-audio_sample_rate: 16000    # Audio sample rate
-hop_size: 320              # Hop length for STFT
-win_size: 1024             # Window size for STFT
-max_frames: 3000           # Maximum frames per sample
-```
-
-#### Model Architecture
-```yaml
-hidden_size: 256           # Hidden dimension
-kernel_size: 3             # Convolution kernel size
-residual_layers: 20        # Number of residual layers
-residual_channels: 256     # Residual channels
-```
-
-#### Training
-```yaml
-max_updates: 200000        # Maximum training steps
-val_check_interval: 5000   # Validation interval
-learning_rate: 0.0001      # Learning rate
-batch_size: 32             # Batch size
-```
-
 ## 📈 Performance
 
 The Conan system achieves state-of-the-art performance on voice conversion tasks:
 
 - **Latency**: ~80ms streaming latency
 - **Quality**: High-quality voice conversion with natural prosody
-- **Scalability**: Support for 120+ speakers
 - **Robustness**: Robust to different speaking styles and content
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 📄 Citation
 
@@ -286,20 +213,8 @@ If you use Conan in your research, please cite our work:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🙏 Acknowledgements
 
-- [FastSpeech2](https://github.com/ming024/FastSpeech2) for the base TTS architecture
+- [FastSpeech2](https://github.com/ming024/FastSpeech2) for the codebase and base TTS architectures
 - [HiFi-GAN](https://github.com/jik876/hifi-gan) for the neural vocoder
 - [Emformer](https://github.com/pytorch/audio) for efficient transformer implementation
-- [VCTK](https://datasets.activeloop.ai/docs/ml/datasets/vctk/) dataset for training data
-
-## 📞 Contact
-
-For questions and support:
-- Create an issue on GitHub
-- Email: [your-email@domain.com]
-- Project page: [https://your-project-page.com]
-
----
-
-**Note**: This is a research implementation. For production use, additional optimization and testing may be required.

@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 # Add inference directory to path
-from Conan_previousemformer import StreamingVoiceConversion
+from inference.Conan_previous import StreamingVoiceConversion
 
 from utils.commons.hparams import hparams, set_hparams
 from utils.audio.io import save_wav

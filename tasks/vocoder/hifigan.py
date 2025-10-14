@@ -16,7 +16,7 @@ from modules.vocoder.hifigan.hifigan_causal import (
     mel_loss,
 )
 from modules.vocoder.hifigan.mel_utils import mel_spectrogram
-from modules.parallel_wavegan.losses import MultiResolutionSTFTLoss
+from modules.vocoder.hifigan.stft_loss import MultiResolutionSTFTLoss
 from tasks.vocoder.dataset_utils import HifiGANDataset
 from tasks.vocoder.vocoder_base import VocoderBaseTask
 from utils import audio

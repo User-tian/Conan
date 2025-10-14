@@ -98,3 +98,4 @@ inference/test_vocoder.py
 inference/techsinger.py
 inference/eva*
 streaming_f0_test/
+commands.sh
