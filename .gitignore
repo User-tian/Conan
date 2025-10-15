@@ -99,3 +99,9 @@ inference/techsinger.py
 inference/eva*
 streaming_f0_test/
 commands.sh
+
+egs/stage1_emformer.yaml
+egs/stage1_previousemformer.yaml
+egs/vc.yaml
+egs/stage1.yaml
+egs/stage1_fast.yaml

@@ -156,7 +156,7 @@ crop: false
 predictor_grad: 1.0
 
 style: true
-silent_token: 57 # if glm then 8520
+silent_token: 57
 content_embedding_dim: 102
 
 # Emformer-related parameters

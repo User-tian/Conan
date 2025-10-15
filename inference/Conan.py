@@ -69,9 +69,7 @@ class StreamingVoiceConversion:
         )["mel"]
         return np.clip(mel, hparams["mel_vmin"], hparams["mel_vmax"])
 
-    def infer_once(self, inp: Dict, spk_emb=None):
-        if spk_emb is not None:
-            spk_emb = torch.from_numpy(spk_emb).float().to(self.device)
+    def infer_once(self, inp: Dict):
         # 1. Load reference mel
         ref_mel_np = self._wav_to_mel(inp["ref_wav"])
         ref_mel = torch.from_numpy(ref_mel_np).float().to(self.device)
@@ -80,7 +78,7 @@ class StreamingVoiceConversion:
         src_mel_np = self._wav_to_mel(inp["src_wav"])
         src_mel = torch.from_numpy(src_mel_np).unsqueeze(0).to(self.device)  # [1, T, 80]
         total_frames = src_mel.shape[1]
-        # 3. Streaming Emformer + RFSinger with proper state management
+        # 3. Streaming Emformer + main model with proper state management
         chunk_size = self.hparams["chunk_size"] // 20  # frames per chunk (20ms per frame)
         right_context = self.hparams["right_context"]  # frames
         seg = chunk_size
@@ -133,9 +131,9 @@ class StreamingVoiceConversion:
             with torch.no_grad():
                 out = self.model(
                     content=all_codes,
-                    spk_embed=spk_emb,
+                    spk_embed=None,
                     target=None,
-                    ref=None, # ref_mel.unsqueeze(0),
+                    ref=ref_mel.unsqueeze(0),
                     f0=None,
                     uv=None,
                     infer=True,
@@ -161,32 +159,29 @@ class StreamingVoiceConversion:
             wav_pred = np.concatenate(wav_chunks, axis=0)
         else:
             wav_pred = self.vocoder.spec2wav(mel_pred.cpu().numpy())
-        # Vocoder whole sentence
+
         # wav_pred = self.vocoder.spec2wav(mel_pred.cpu().numpy())
         
         
         return wav_pred, mel_pred.cpu().numpy()
 
-    def test_multiple_sentences(self, test_cases: List[Dict], spk_embs=None):
+    def test_multiple_sentences(self, test_cases: List[Dict]):
         os.makedirs("infer_out_demo", exist_ok=True)
         for i, inp in enumerate(test_cases):
-            for j, emb in enumerate(spk_embs):
-                wav, mel = self.infer_once(inp, emb)
-                ref_name = os.path.splitext(os.path.basename(inp["ref_wav"]))[0]
-                src_name = os.path.splitext(os.path.basename(inp["src_wav"]))[0]
-                save_path = f"infer_out_demo/{j}_{src_name}.wav"
-                save_wav(wav, save_path, self.hparams["audio_sample_rate"])
-                print(f"Saved output: {save_path}")
+            wav, mel = self.infer_once(inp)
+            ref_name = os.path.splitext(os.path.basename(inp["ref_wav"]))[0]
+            src_name = os.path.splitext(os.path.basename(inp["src_wav"]))[0]
+            save_path = f"infer_out_demo/{ref_name}_{src_name}.wav"
+            save_wav(wav, save_path, self.hparams["audio_sample_rate"])
+            print(f"Saved output: {save_path}")
 
 
 if __name__ == "__main__":
     set_hparams()
     # Example usage: update with your own wav paths
-    spk_embs = np.load("/storageSSD/huiran/src/NVAE-DarkStream/output/nvae_conan/emb.npy")
     demo = [
-        # {"ref_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p226_005_mic2.wav", "src_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p236_005_mic2.wav"},
-        {"ref_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p226_005_mic2.wav", "src_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p246_005_mic2.wav"},
+        {"ref_wav": "path/to/reference_audio.wav", "src_wav": "path/to/source_audio.wav"},
     ]
     
     engine = StreamingVoiceConversion(hparams)
-    engine.test_multiple_sentences(demo, spk_embs)
+    engine.test_multiple_sentences(demo)

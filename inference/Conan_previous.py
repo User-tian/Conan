@@ -134,7 +134,7 @@ class StreamingVoiceConversion:
         src_mel = mel_spectrogram(src_audio, hparams["fft_size"], hparams["audio_num_mel_bins"], src_sampling_rate, hparams["hop_size"], hparams["win_size"], hparams["f0_min"], None, center=False).transpose(1, 2).to(self.device)
         # src_mel = torch.from_numpy(src_mel_np).unsqueeze(0).to(self.device)  # [1, T, 80]
         total_frames = src_mel.shape[1]
-        # 3. Streaming Emformer + RFSinger with proper state management
+        # 3. Streaming Emformer + main model with proper state management
         chunk_size = self.hparams["chunk_size"] // 20  # frames per chunk (20ms per frame)
         right_context = self.hparams["right_context"]  # frames
         seg = chunk_size
@@ -215,7 +215,7 @@ class StreamingVoiceConversion:
             wav_pred = np.concatenate(wav_chunks, axis=0)
         else:
             wav_pred = self.vocoder.spec2wav(mel_pred.cpu().numpy())
-        # Vocoder whole sentence
+            
         # wav_pred = self.vocoder.spec2wav(mel_pred.cpu().numpy())
         
         
@@ -236,9 +236,7 @@ if __name__ == "__main__":
     set_hparams()
     # Example usage: update with your own wav paths
     demo = [
-        # {"ref_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p226_005_mic2.wav", "src_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p236_005_mic2.wav"},
-        # {"ref_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p226_005_mic2.wav", "src_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p246_005_mic2.wav"},
-        {"ref_wav": "/storageNVME/baotong/datasets/vctk-controlvc16k/wav16_silence_trimmed_padded/p226_005_mic2.wav", "src_wav": "/storage/baotong/workspace/VC-style/test_dataset/src_audio/l2arctic/wav/Spanish/arctic_a0002.wav"},
+        {"ref_wav": "path/to/reference_audio.wav", "src_wav": "path/to/source_audio.wav"},
     ]
     
     engine = StreamingVoiceConversion(hparams)

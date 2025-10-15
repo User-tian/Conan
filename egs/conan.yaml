@@ -1,6 +1,6 @@
 base_config: egs/egs_bases/tts/fs.yaml
 task_cls: tasks.Conan.Conan.ConanTask
-binary_data_dir: 'data/binary/vc_6layer'
+binary_data_dir: 'data/binary/vc'
 processed_data_dir: 'data/processed/vc'
 binarizer_cls: data_gen.conan_binarizer.ConanBinarizer
 
@@ -116,7 +116,7 @@ binarization_args:
 
 # vocoder
 vocoder: HifiGAN
-vocoder_ckpt: checkpoints/hifigan_vc
+vocoder_ckpt: checkpoints/hifigan_vc_causal
 use_nsf: false
 vocoder_stream_context: 4
 
@@ -155,15 +155,6 @@ forcing: 20000
 crop: false
 predictor_grad: 1.0
 
-style: true
+style: false
 silent_token: 57
 content_embedding_dim: 102
-
-# Emformer-related parameters
-emformer_ckpt: checkpoints/emformer_test2
-emformer_layers: 6
-chunk_size: 80
-right_context: 2
-emformer_input_dim: 80
-emformer_output_dim: 100
-emformer_mode: null

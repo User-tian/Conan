@@ -177,6 +177,6 @@ spec_max: [0.03640973940491676, 0.039425432682037354, 0.29524752497673035, 0.457
 # predictor_grad: 1.0
 
 # style: false
-# silent_token: 57 # if glm then 8520
+# silent_token: 57
 # content_embedding_dim: 102
 save_best: true

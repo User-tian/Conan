@@ -1,7 +1,7 @@
 # Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-1.11+-red.svg)](https://pytorch.org/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-310/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.51+-red.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 This is the official implementation of our ASRU 2025 paper "Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion"
@@ -161,6 +161,10 @@ Use the exp_name that contains the trained main model checkpoints, and update yo
 ## Checkpoints
 You can download pre-trained model checkpoints from [Google Drive](https://drive.google.com/drive/folders/1QhnECo2L4xfXDgdrnM6L1xpsH7u3iRvj?usp=sharing).
 
+Main system checkpoint folders: Emformer, Conan, hifigan_vc
+
+Fast system checkpoint folders: Emformer_fast, Conan_fast, hifigan_vc (you may need to change the "right_context" in the config file to 0 instead of 2)
+
 Note: As we previous developed the Emformer training branch on another codebase, we provided another inference script for it `inference/Conan_previous.py`.
 ## 📁 Project Structure
 
@@ -201,11 +205,14 @@ The Conan system achieves state-of-the-art performance on voice conversion tasks
 If you use Conan in your research, please cite our work:
 
 ```bibtex
-@article{conan2024,
-  title={Conan: Streaming Voice Conversion with Diffusion Models},
-  author={Your Name and Collaborators},
-  journal={arXiv preprint arXiv:2024.xxxxx},
-  year={2024}
+@misc{zhang2025conanchunkwiseonlinenetwork,
+      title={Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion}, 
+      author={Yu Zhang and Baotong Tian and Zhiyao Duan},
+      year={2025},
+      eprint={2507.14534},
+      archivePrefix={arXiv},
+      primaryClass={eess.AS},
+      url={https://arxiv.org/abs/2507.14534}, 
 }
 ```
 
