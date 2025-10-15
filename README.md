@@ -4,8 +4,17 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.51+-red.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-This is the official implementation of our ASRU 2025 paper "Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion"
-![Architecture](figs/arch.png)
+This is the official implementation of our ASRU 2025 paper "**Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion**".
+
+<p align="center">
+  <a href="https://arxiv.org/abs/2507.14534"><b>📄 Read the Paper (arXiv)</b></a> &nbsp;|&nbsp;
+  <a href="https://aaronz345.github.io/ConanDemo/"><b>🎧 Demo Page</b></a>
+</p>
+
+<p align="center">
+  <img src="figs/arch.png" alt="Architecture" width="650"/>
+</p>
+
 Zero-shot online voice conversion (VC) holds significant promise for real-time communications and entertainment. 
 However, current VC models struggle to preserve semantic fidelity under real-time constraints, deliver natural-sounding conversions, and adapt effectively to unseen speaker characteristics.
 To address these challenges, we introduce Conan, a chunkwise online zero-shot voice conversion model that preserves the content of the source while matching the speaker representation of reference speech.
