@@ -91,7 +91,7 @@ The `metadata.json` file should contain entries like:
 ```bash
 export PYTHONPATH=/storage/baotong/workspace/Conan:$PYTHONPATH # (optional) you may need to set the PYTHONPATH for import dependencies
 python trials/extract_f0_rmvpe.py \
-    --config  /u/usertian/workspace/streamvc/egs/conan.yaml \
+    --config  egs/conan.yaml \
     --batch-size 80 \
     --save-dir /path/to/audio  
 ```
@@ -196,7 +196,7 @@ Conan/
 
 The Conan system achieves state-of-the-art performance on voice conversion tasks:
 
-- **Latency**: ~80ms streaming latency
+- **Latency**: ~80ms streaming latency (37ms latency for fast system)
 - **Quality**: High-quality voice conversion with natural prosody
 - **Robustness**: Robust to different speaking styles and content
 
