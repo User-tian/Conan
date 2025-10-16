@@ -214,14 +214,11 @@ The Conan system achieves state-of-the-art performance on voice conversion tasks
 If you use Conan in your research, please cite our work:
 
 ```bibtex
-@misc{zhang2025conanchunkwiseonlinenetwork,
-      title={Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion}, 
-      author={Yu Zhang and Baotong Tian and Zhiyao Duan},
-      year={2025},
-      eprint={2507.14534},
-      archivePrefix={arXiv},
-      primaryClass={eess.AS},
-      url={https://arxiv.org/abs/2507.14534}, 
+@article{zhang2025conan,
+  title={Conan: A Chunkwise Online Network for Zero-Shot Adaptive Voice Conversion},
+  author={Zhang, Yu and Tian, Baotong and Duan, Zhiyao},
+  journal={arXiv preprint arXiv:2507.14534},
+  year={2025}
 }
 ```
 
