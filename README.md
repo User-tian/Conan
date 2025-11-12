@@ -134,6 +134,7 @@ processed_data_dir: 'data/processed/vc'
 ## 🎯 Training
 
 ### Stage 1: Train Emformer
+We first prepare the data and HuBERT tokens from the s3prl package using ```s3prl.nn.S3PRLUpstream("hubert")```.
 ```bash
 CUDA_VISIBLE_DEVICES=0 python tasks/run.py \
     --config egs/emformer.yaml \
@@ -142,6 +143,7 @@ CUDA_VISIBLE_DEVICES=0 python tasks/run.py \
 ```
 
 ### Stage 2: Train Main Conan Model
+We fix the Emformer and Vocoder components, and prepare hubert entries of the data by applying the trained Emformer through the datasets (extracted chunk-wise).
 ```bash
 CUDA_VISIBLE_DEVICES=0 python tasks/run.py \
     --config egs/conan_emformer.yaml \
